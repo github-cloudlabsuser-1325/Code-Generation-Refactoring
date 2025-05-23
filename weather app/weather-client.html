@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weather Lookup</title>
+    <link rel="stylesheet" href="https://cdn.amcharts.com/lib/4/plugins/animatedweather/animatedweather.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #181a1b;
+            margin: 0;
+            padding: 0;
+            color: #f1f1f1;
+        }
+        .container {
+            max-width: 400px;
+            margin: 60px auto;
+            background: #23272a;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px #0008;
+            padding: 32px;
+        }
+        h1 {
+            text-align: center;
+            color: #61dafb;
+        }
+        .search-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .search-bar input[type="text"] {
+            flex: 1;
+            padding: 18px;
+            font-size: 1.3em;
+            border: 1px solid #444;
+            border-radius: 8px 0 0 8px;
+            background: #181a1b;
+            color: #f1f1f1;
+            outline: none;
+        }
+        .search-bar button {
+            padding: 18px 24px;
+            font-size: 1.3em;
+            background: #61dafb;
+            color: #181a1b;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .search-bar button:hover {
+            background: #21a1c4;
+        }
+        .result {
+            margin-top: 24px;
+            padding: 16px;
+            background: #202225;
+            border-radius: 6px;
+            min-height: 60px;
+            color: #f1f1f1;
+            text-align: center;
+        }
+        .weather-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+        .error {
+            color: #ff6b6b;
+        }
+    </style>
+    <!-- Use official amCharts CDN for AnimatedWeatherIcon -->
+    <script src="https://cdn.amcharts.com/lib/4/plugins/animatedweather/animatedweather.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Weather Lookup</h1>
+        <div class="search-bar">
+            <input type="text" id="cityInput" placeholder="Enter city name..." />
+            <button onclick="fetchWeather()">&#128269;</button>
+        </div>
+        <div class="result" id="result"></div>
+    </div>
+    <script>
+        // Map OpenWeatherMap icon codes to AnimatedWeatherIcon names
+        function getAnimatedWeatherIcon(iconCode) {
+            const iconMap = {
+                "01d": "clear-day",
+                "01n": "clear-night",
+                "02d": "partly-cloudy-day",
+                "02n": "partly-cloudy-night",
+                "03d": "cloudy",
+                "03n": "cloudy",
+                "04d": "cloudy",
+                "04n": "cloudy",
+                "09d": "rain",
+                "09n": "rain",
+                "10d": "rain",
+                "10n": "rain",
+                "11d": "thunder",
+                "11n": "thunder",
+                "13d": "snow",
+                "13n": "snow",
+                "50d": "fog",
+                "50n": "fog"
+            };
+            return iconMap[iconCode] || "cloudy";
+        }
+
+        async function fetchWeather() {
+            const city = document.getElementById('cityInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = '';
+            if (!city) {
+                resultDiv.innerHTML = '<span class="error">Please enter a city name.</span>';
+                return;
+            }
+            try {
+                const response = await fetch(`http://localhost:3000/api/weather/${encodeURIComponent(city)}`);
+                if (!response.ok) {
+                    throw new Error('City not found or server error.');
+                }
+                const data = await response.json();
+                const icon = data.weather?.[0]?.icon;
+                const description = data.weather?.[0]?.description || 'N/A';
+                resultDiv.innerHTML = `
+                    <span class="weather-icon" id="animated-weather-icon"></span>
+                    <br>
+                    <strong style="font-size:1.3em">${data.name || city}</strong><br>
+                    <span style="font-size:1.1em">Temperature: ${data.main?.temp} °C</span><br>
+                    <span style="text-transform:capitalize">${description}</span>
+                `;
+                // Render the animated icon after DOM update
+                if (icon && window.AnimatedWeatherIcon) {
+                    AnimatedWeatherIcon.show("animated-weather-icon", getAnimatedWeatherIcon(icon));
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<span class="error">${err.message}</span>`;
+            }
+        }
+
+        // Allow pressing Enter to search
+        document.getElementById('cityInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') fetchWeather();
+        });
+    </script>
+</body>
+</html>
